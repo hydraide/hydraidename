@@ -1,4 +1,4 @@
-module github.com/trendizz/name
+module github.com/hydraide/hydraidename
 
 go 1.24.1
 
