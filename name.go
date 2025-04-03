@@ -43,11 +43,14 @@ type Name interface {
 	Sanctuary(sanctuaryID string) Name
 	Realm(realmName string) Name
 	Swamp(swampName string) Name
+	Get() string
+	GetFolderNumber(allFolders uint16) uint16
+	IsWildcardPattern() bool
+	// ComparePattern ----- > ez alatt lévő funkciók már nincsenek a nyilvános SDK-ban, a többi szinkronban van
 	ComparePattern(comparableName Name) bool
 	GetSanctuaryID() string
 	GetRealmName() string
 	GetSwampName() string
-	Get() string
 	GetFullHashPath(rootPath string, allServers int, depth int, maxFoldersPerLevel int) string
 	GetServerNumber(allServers int) uint16
 }
@@ -59,14 +62,20 @@ type name struct {
 	SwampName      string
 	HashPath       string
 	ServerNumber   uint16
+	FolderNumber   uint16
 	hashPathMu     sync.Mutex
 	folderNumberMu sync.Mutex
 }
 
+// New creates a new empty Name instance.
+// Use this as the starting point for building hierarchical names
+// by chaining Sanctuary(), Realm(), and Swamp().
 func New() Name {
 	return &name{}
 }
 
+// Sanctuary sets the top-level domain of the Name.
+// Typically used to group major logical areas (e.g. "users", "products").
 func (n *name) Sanctuary(sanctuaryID string) Name {
 	return &name{
 		SanctuaryID: sanctuaryID,
@@ -74,6 +83,8 @@ func (n *name) Sanctuary(sanctuaryID string) Name {
 	}
 }
 
+// Realm sets the second-level scope under the Sanctuary.
+// Often used to further categorize Swamps (e.g. "profiles", "settings").
 func (n *name) Realm(realmName string) Name {
 	return &name{
 		SanctuaryID: n.SanctuaryID,
@@ -82,6 +93,9 @@ func (n *name) Realm(realmName string) Name {
 	}
 }
 
+// Swamp sets the final segment of the Name — the Swamp itself.
+// This represents the concrete storage unit where Treasures are kept.
+// The full path becomes: sanctuary/realm/swamp.
 func (n *name) Swamp(swampName string) Name {
 	return &name{
 		SanctuaryID: n.SanctuaryID,
@@ -89,6 +103,50 @@ func (n *name) Swamp(swampName string) Name {
 		SwampName:   swampName,
 		Path:        n.Path + "/" + swampName,
 	}
+}
+
+// Get returns the full hierarchical path of the Name in the format:
+//
+//	"sanctuary/realm/swamp"
+//
+// 🔒 Internal use only: This method is intended for SDK-level logic,
+// such as logging, folder path generation, or internal diagnostics.
+// SDK users should never need to call this directly.
+func (n *name) Get() string {
+	return n.Path
+}
+
+// GetFolderNumber returns the 1-based index of the server responsible for this Name.
+// It uses a fast, consistent xxhash hash over the combined Sanctuary, Realm, and Swamp
+// to deterministically assign the Name to one of `allFolders` available slots.
+//
+// 🔒 Internal use only: This function is used by the SDK to route
+// the Name to the correct Hydra client instance in a distributed setup.
+// It should not be called directly by application developers.
+//
+// Example (inside SDK logic):
+//
+//	client := router.Route(name.GetFolderNumber(1000))
+func (n *name) GetFolderNumber(allFolders uint16) uint16 {
+
+	n.folderNumberMu.Lock()
+	defer n.folderNumberMu.Unlock()
+
+	if n.FolderNumber != 0 {
+		return n.FolderNumber
+	}
+
+	hash := xxhash.Sum64([]byte(n.SanctuaryID + n.RealmName + n.SwampName))
+
+	n.FolderNumber = uint16(hash%uint64(allFolders)) + 1
+
+	return n.FolderNumber
+
+}
+
+// IsWildcardPattern returns true if any part of the Name is set to "*".
+func (n *name) IsWildcardPattern() bool {
+	return n.SanctuaryID == "*" || n.RealmName == "*" || n.SwampName == "*"
 }
 
 // ComparePattern compares the last element of the path with the given SwampName
@@ -115,10 +173,6 @@ func (n *name) GetRealmName() string {
 
 func (n *name) GetSwampName() string {
 	return n.SwampName
-}
-
-func (n *name) Get() string {
-	return n.Path
 }
 
 func (n *name) GetFullHashPath(rootPath string, allServers int, depth int, maxFoldersPerLevel int) string {
@@ -154,6 +208,15 @@ func (n *name) GetServerNumber(allServers int) uint16 {
 
 }
 
+// Load reconstructs a Name from a given path string in the format:
+//
+//	"sanctuary/realm/swamp"
+//
+// It parses the path segments and returns a Name instance with all fields set.
+//
+// 🔒 Internal use only: This function is intended for SDK-level logic,
+// such as reconstructing a Name from persisted references, file paths, or routing metadata.
+// It should not be called by application developers directly.
 func Load(path string) Name {
 
 	// feldolgozzuk a path-ot és előállítjuk belőle a Name objektumot
@@ -177,6 +240,7 @@ func Load(path string) Name {
 }
 
 func generateHashedDirectoryPath(input string, depth int, maxFoldersPerLevel int) string {
+
 	hash := xxhash.Sum64String(input)
 	hashHex := fmt.Sprintf("%x", hash)
 
