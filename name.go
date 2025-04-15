@@ -32,17 +32,12 @@
 package name
 
 import (
-	"encoding/gob"
 	"fmt"
 	"github.com/cespare/xxhash/v2"
 	"path/filepath"
 	"strings"
 	"sync"
 )
-
-func init() {
-	gob.Register(&name{}) // itt a "name" az azonos fájlban látható struct
-}
 
 type Name interface {
 	Sanctuary(sanctuaryID string) Name
