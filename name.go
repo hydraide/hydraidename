@@ -51,8 +51,7 @@ type Name interface {
 	GetSanctuaryID() string
 	GetRealmName() string
 	GetSwampName() string
-	GetFullHashPath(rootPath string, allServers int, depth int, maxFoldersPerLevel int) string
-	GetServerNumber(allServers int) uint16
+	GetFullHashPath(rootPath string, islandID uint64, depth int, maxFoldersPerLevel int) string
 }
 
 type name struct {
@@ -175,7 +174,7 @@ func (n *name) GetSwampName() string {
 	return n.SwampName
 }
 
-func (n *name) GetFullHashPath(rootPath string, allServers int, depth int, maxFoldersPerLevel int) string {
+func (n *name) GetFullHashPath(rootPath string, islandID uint64, depth int, maxFoldersPerLevel int) string {
 
 	n.hashPathMu.Lock()
 	defer n.hashPathMu.Unlock()
@@ -184,27 +183,9 @@ func (n *name) GetFullHashPath(rootPath string, allServers int, depth int, maxFo
 		return n.HashPath
 	}
 
-	serverNumber := n.GetServerNumber(allServers)
 	hashedDirectoryPath := generateHashedDirectoryPath(n.Path, depth, maxFoldersPerLevel)
-	n.HashPath = filepath.Join(rootPath, fmt.Sprintf("%d", serverNumber), hashedDirectoryPath)
+	n.HashPath = filepath.Join(rootPath, fmt.Sprintf("%d", islandID), hashedDirectoryPath)
 	return n.HashPath
-
-}
-
-func (n *name) GetServerNumber(allServers int) uint16 {
-
-	n.folderNumberMu.Lock()
-	defer n.folderNumberMu.Unlock()
-
-	if n.ServerNumber != 0 {
-		return n.ServerNumber
-	}
-
-	hash := xxhash.Sum64([]byte(n.SanctuaryID + n.RealmName + n.SwampName))
-
-	n.ServerNumber = uint16(hash%uint64(allServers)) + 1
-
-	return n.ServerNumber
 
 }
 
