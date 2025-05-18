@@ -184,7 +184,12 @@ func (n *name) GetFullHashPath(rootPath string, islandID uint64, depth int, maxF
 	}
 
 	hashedDirectoryPath := generateHashedDirectoryPath(n.Path, depth, maxFoldersPerLevel)
-	n.HashPath = filepath.Join(rootPath, fmt.Sprintf("%d", islandID), hashedDirectoryPath)
+	n.HashPath = filepath.Join(
+		rootPath,
+		fmt.Sprintf("%d", islandID),
+		hashedDirectoryPath,
+		generateSwampFolderName(n.Path))
+
 	return n.HashPath
 
 }
@@ -241,4 +246,9 @@ func generateHashedDirectoryPath(input string, depth int, maxFoldersPerLevel int
 	}
 
 	return strings.Join(parts, "/")
+}
+
+func generateSwampFolderName(swampName string) string {
+	sum := xxhash.Sum64([]byte(swampName))
+	return fmt.Sprintf("%x", sum)
 }
