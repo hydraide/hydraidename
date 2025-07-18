@@ -8,30 +8,30 @@ import (
 
 func TestGetFullHashPath(t *testing.T) {
 
-	// Paraméterek a teszthez
+	// Parameters for the test
 	rootPath := "/hydra/data"
 	depth := 2
 	maxFoldersPerLevel := 10000
 
-	// Első Name példány
+	// First Name instance
 	name1 := New().
 		Sanctuary("Sanctuary1").
 		Realm("RealmA").
 		Swamp("SwampX")
 
-	// Második Name példány ugyanazokkal az értékekkel
+	// Second Name instance with the same values
 	name2 := New().
 		Sanctuary("Sanctuary1").
 		Realm("RealmA").
 		Swamp("SwampX")
 
-	// Harmadik Name példány különböző értékekkel
+	// Third Name instance with different values
 	name3 := New().
 		Sanctuary("Sanctuary2").
 		Realm("RealmB").
 		Swamp("SwampY")
 
-	// Teszt: Ugyanaz a hash path generálódik-e az azonos adatokhoz
+	// Test: Do identical inputs generate the same hash path?
 	hashPath1 := name1.GetFullHashPath(rootPath, 10, depth, maxFoldersPerLevel)
 	hashPath2 := name2.GetFullHashPath(rootPath, 10, depth, maxFoldersPerLevel)
 
@@ -41,13 +41,13 @@ func TestGetFullHashPath(t *testing.T) {
 		t.Errorf("Hash path mismatch for identical names: %s != %s", hashPath1, hashPath2)
 	}
 
-	// Teszt: Különböző adatok eltérő hash path-ot generálnak-e
+	// Test: Do different inputs generate different hash paths?
 	hashPath3 := name3.GetFullHashPath(rootPath, 10, depth, maxFoldersPerLevel)
 	if hashPath1 == hashPath3 {
 		t.Errorf("Hash path collision: %s == %s", hashPath1, hashPath3)
 	}
 
-	// Kimenet a könnyebb ellenőrzéshez
+	// Output for easier verification
 	fmt.Println("Hash path 1:", hashPath1)
 	fmt.Println("Hash path 2:", hashPath2)
 	fmt.Println("Hash path 3:", hashPath3)
@@ -55,7 +55,6 @@ func TestGetFullHashPath(t *testing.T) {
 
 // goos: linux
 // goarch: amd64
-// pkg: github.com/trendizz/hydra-spine/hydra/name
 // cpu: AMD Ryzen 9 5950X 16-Core Processor
 // BenchmarkName_Compare
 // BenchmarkName_Compare-32    	64480774	        18.77 ns/op
@@ -76,7 +75,6 @@ func BenchmarkName_Compare(b *testing.B) {
 
 // goos: linux
 // goarch: amd64
-// pkg: github.com/trendizz/hydra-spine/hydra/name
 // cpu: AMD Ryzen 9 5950X 16-Core Processor
 // BenchmarkName_LoadFromCanonicalForm
 // NEW BenchmarkName_Load-32    	 1630828	       748.7 ns/op
@@ -94,7 +92,6 @@ func BenchmarkName_Load(b *testing.B) {
 
 // goos: linux
 // goarch: amd64
-// pkg: github.com/trendizz/hydra-spine/hydra/name
 // cpu: AMD Ryzen 9 5950X 16-Core Processor
 // BenchmarkName_GetCanonicalForm
 // NEW BenchmarkName_Get-32    	69597764	        16.46 ns/op
@@ -128,24 +125,19 @@ func BenchmarkName_Add(b *testing.B) {
 
 }
 
-// /home/bearbite/.cache/JetBrains/GoLand2024.2/tmp/GoLand/___BenchmarkName_GetFullHashPath_in_github_com_trendizz_hydra_hydra_name.test -test.v -test.paniconexit0 -test.bench ^\QBenchmarkName_GetFullHashPath\E$ -test.run ^$
 // goos: linux
 // goarch: amd64
-// pkg: github.com/trendizz/hydra/hydra/name
 // cpu: AMD Ryzen Threadripper 2950X 16-Core Processor
 // BenchmarkName_GetFullHashPath
 // BenchmarkName_GetFullHashPath-32    	69819813	        17.16 ns/op
 func BenchmarkName_GetFullHashPath(b *testing.B) {
 
-	// Előkészítünk egy minta nevet
 	sanctuary := "BenchmarkSanctuary"
 	realm := "BenchmarkRealm"
 	swamp := "BenchmarkSwamp"
 
-	// Készítsünk egy `Name` objektumot
 	n := New().Sanctuary(sanctuary).Realm(realm).Swamp(swamp)
 
-	// Paraméterek a teszthez
 	rootPath := "/hydra/data"
 	depth := 3
 	maxFoldersPerLevel := 5000
